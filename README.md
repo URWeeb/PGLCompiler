@@ -1,4 +1,4 @@
-# CompilersCourse2026
+# PGLCompiler
 
 Репозиторий для написания компилятора языка PGL(Procedural General Language).
 

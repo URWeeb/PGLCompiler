@@ -1,0 +1,17 @@
+func main() -> int {
+    var x : int = 10;
+    var y : int = 3;
+
+    var sum : int = x + y;
+    var diff : int = x - y;
+    var prod : int = x * y;
+    var quot : int = x / y;
+
+    print(sum);
+    print(diff);
+    print(prod);
+    print(quot);
+
+    var neg : int = -x;
+    print(neg);
+}

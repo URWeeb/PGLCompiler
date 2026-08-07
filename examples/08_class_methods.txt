@@ -1,0 +1,27 @@
+class Counter {
+    var count : int;
+
+    func increment(step : int) -> int {
+        count = count + step;
+        return count;
+    }
+
+    func reset() -> bool {
+        count = 0;
+        return true;
+    }
+}
+
+func main() -> int {
+    var c : Counter = new Counter();
+
+    var v1 : int = c.increment(1);
+    print(v1);
+
+    var v2 : int = c.increment(4);
+    print(v2);
+
+    c.reset();
+    var v3 : int = c.increment(10);
+    print(v3);
+}

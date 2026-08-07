@@ -1,0 +1,21 @@
+class Node {
+    var value : int;
+}
+
+class Pair {
+    var first  : int;
+    var second : int;
+
+    func sum() -> int {
+        return first + second;
+    }
+}
+
+func main() -> int {
+    var p : Pair = new Pair();
+    var s : int  = p.sum();
+    print(s);
+
+    var node : Node = new Node();
+    print(node.value);
+}

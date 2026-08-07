@@ -1,0 +1,14 @@
+func main() -> int {
+    var x : int = 1;
+    print(x);
+
+    x = x * 2;
+    print(x);
+
+    x = x + 10;
+    print(x);
+
+    var ok : bool = false;
+    ok = !ok;
+    print(ok);
+}

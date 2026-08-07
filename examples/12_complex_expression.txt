@@ -1,0 +1,16 @@
+func main() -> int {
+    var a : int = 2 + 3 * 4;
+    print(a);
+
+    var b : int = (2 + 3) * 4;
+    print(b);
+
+    var c : bool = 1 + 1 == 2 && 3 > 1;
+    print(c);
+
+    var d : bool = !(2 > 5) || false;
+    print(d);
+
+    var e : int = -(-10);
+    print(e);
+}

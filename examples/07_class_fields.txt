@@ -1,0 +1,10 @@
+class Point {
+    var x : int;
+    var y : int;
+}
+
+func main() -> int {
+    var p : Point = new Point();
+    print(p.x);
+    print(p.y);
+}

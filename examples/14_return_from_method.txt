@@ -1,0 +1,32 @@
+class Checker {
+    func isPositive(n : int) -> bool {
+        if (n > 0) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    func factorial(n : int) -> int {
+        var result : int = 1;
+        var i : int = 2;
+        while (i <= n) {
+            result = result * i;
+            i = i + 1;
+        }
+        return result;
+    }
+}
+
+func main() -> int {
+    var ch : Checker = new Checker();
+
+    var p : bool = ch.isPositive(5);
+    print(p);
+
+    var q : bool = ch.isPositive(-3);
+    print(q);
+
+    var f : int = ch.factorial(6);
+    print(f);
+}

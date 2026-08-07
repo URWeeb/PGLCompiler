@@ -1,0 +1,19 @@
+func main() -> int {
+    var a : bool = true;
+    var b : bool = false;
+
+    print(a);
+    print(b);
+    print(!a);
+    print(a && b);
+    print(a || b);
+
+    var x : int = 5;
+    var y : int = 10;
+    print(x == y);
+    print(x != y);
+    print(x < y);
+    print(x > y);
+    print(x <= 5);
+    print(x >= 6);
+}

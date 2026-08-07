@@ -1,0 +1,23 @@
+class Math {
+    func add(a : int, b : int) -> int {
+        return a + b;
+    }
+
+    func max(a : int, b : int) -> int {
+        if (a >= b) {
+            return a;
+        } else {
+            return b;
+        }
+    }
+}
+
+func main() -> int {
+    var m : Math = new Math();
+
+    var s : int = m.add(3, 7);
+    print(s);
+
+    var mx : int = m.max(4, 9);
+    print(mx);
+}

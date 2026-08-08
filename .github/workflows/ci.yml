@@ -21,12 +21,8 @@ jobs:
       - name: Install dependencies (Ubuntu)
         if: runner.os == 'Linux'
         run: |
-          # Replaces Ubuntu ports mirror with Yandex mirror (from original GitLab CI)
-          sudo sed -i 's|https://ports.ubuntu.com|https://mirror.yandex.ru/ubuntu-ports|g' /etc/apt/sources.list /etc/apt/sources.list.d/*.list 2>/dev/null || true
           sudo apt-get update -y
           sudo apt-get install -y --fix-missing g++ make cmake flex bison libgtest-dev libzstd-dev
-
-          # Use official LLVM script to ensure clang/llvm 20 is installed correctly
           wget -q https://apt.llvm.org/llvm.sh
           chmod +x llvm.sh
           sudo ./llvm.sh 20
@@ -70,7 +66,6 @@ jobs:
       - name: Install dependencies (Ubuntu)
         if: runner.os == 'Linux'
         run: |
-          sudo sed -i 's|https://ports.ubuntu.com|https://mirror.yandex.ru/ubuntu-ports|g' /etc/apt/sources.list /etc/apt/sources.list.d/*.list 2>/dev/null || true
           sudo apt-get update -y
           sudo apt-get install -y --fix-missing g++ make cmake flex bison libgtest-dev libzstd-dev
           wget -q https://apt.llvm.org/llvm.sh
@@ -97,6 +92,9 @@ jobs:
       - name: Run Google Tests
         run: |
           echo "Запускаем Google тесты"
+
+          chmod +x ./build/compiler ./build/run_tests 2>/dev/null || true
+
           make test
 
   ir_test:
@@ -114,7 +112,6 @@ jobs:
       - name: Install dependencies (Ubuntu)
         if: runner.os == 'Linux'
         run: |
-          sudo sed -i 's|https://ports.ubuntu.com|https://mirror.yandex.ru/ubuntu-ports|g' /etc/apt/sources.list /etc/apt/sources.list.d/*.list 2>/dev/null || true
           sudo apt-get update -y
           sudo apt-get install -y --fix-missing g++ make cmake flex bison libgtest-dev libzstd-dev
           wget -q https://apt.llvm.org/llvm.sh
@@ -141,6 +138,9 @@ jobs:
       - name: Run IR Tests
         run: |
           echo "Проверяем компиляцию в нативный бинарник без использования clang"
+
+          chmod +x ./build/compiler
+
           make build
           for f in examples/*.txt; do
             name=$(basename "$f" .txt)
@@ -168,7 +168,6 @@ jobs:
       - name: Install dependencies (Ubuntu)
         if: runner.os == 'Linux'
         run: |
-          sudo sed -i 's|https://ports.ubuntu.com|https://mirror.yandex.ru/ubuntu-ports|g' /etc/apt/sources.list /etc/apt/sources.list.d/*.list 2>/dev/null || true
           sudo apt-get update -y
           sudo apt-get install -y --fix-missing g++ make cmake flex bison libgtest-dev libzstd-dev
           wget -q https://apt.llvm.org/llvm.sh

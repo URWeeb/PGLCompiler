@@ -1,0 +1,198 @@
+name: CI
+
+on:
+  push:
+    branches: [ "**" ]
+  pull_request:
+    branches: [ "**" ]
+
+jobs:
+  build:
+    name: Build (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, macos-latest]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install dependencies (Ubuntu)
+        if: runner.os == 'Linux'
+        run: |
+          # Replaces Ubuntu ports mirror with Yandex mirror (from original GitLab CI)
+          sudo sed -i 's|https://ports.ubuntu.com|https://mirror.yandex.ru/ubuntu-ports|g' /etc/apt/sources.list /etc/apt/sources.list.d/*.list 2>/dev/null || true
+          sudo apt-get update -y
+          sudo apt-get install -y --fix-missing g++ make cmake flex bison libgtest-dev libzstd-dev
+
+          # Use official LLVM script to ensure clang/llvm 20 is installed correctly
+          wget -q https://apt.llvm.org/llvm.sh
+          chmod +x llvm.sh
+          sudo ./llvm.sh 20
+
+      - name: Install dependencies (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          brew install cmake flex bison googletest llvm zstd
+          # Add keg-only packages to PATH so make can find them
+          echo "/opt/homebrew/opt/flex/bin" >> $GITHUB_PATH
+          echo "/opt/homebrew/opt/bison/bin" >> $GITHUB_PATH
+          echo "/opt/homebrew/opt/llvm/bin" >> $GITHUB_PATH
+          echo "/usr/local/opt/flex/bin" >> $GITHUB_PATH
+          echo "/usr/local/opt/bison/bin" >> $GITHUB_PATH
+          echo "/usr/local/opt/llvm/bin" >> $GITHUB_PATH
+
+      - name: Compile
+        run: |
+          echo "Сборка проекта..."
+          make build
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts-${{ matrix.os }}
+          path: build/
+          retention-days: 1
+
+  test:
+    name: Test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    needs: build
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, macos-latest]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install dependencies (Ubuntu)
+        if: runner.os == 'Linux'
+        run: |
+          sudo sed -i 's|https://ports.ubuntu.com|https://mirror.yandex.ru/ubuntu-ports|g' /etc/apt/sources.list /etc/apt/sources.list.d/*.list 2>/dev/null || true
+          sudo apt-get update -y
+          sudo apt-get install -y --fix-missing g++ make cmake flex bison libgtest-dev libzstd-dev
+          wget -q https://apt.llvm.org/llvm.sh
+          chmod +x llvm.sh
+          sudo ./llvm.sh 20
+
+      - name: Install dependencies (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          brew install cmake flex bison googletest llvm zstd
+          echo "/opt/homebrew/opt/flex/bin" >> $GITHUB_PATH
+          echo "/opt/homebrew/opt/bison/bin" >> $GITHUB_PATH
+          echo "/opt/homebrew/opt/llvm/bin" >> $GITHUB_PATH
+          echo "/usr/local/opt/flex/bin" >> $GITHUB_PATH
+          echo "/usr/local/opt/bison/bin" >> $GITHUB_PATH
+          echo "/usr/local/opt/llvm/bin" >> $GITHUB_PATH
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts-${{ matrix.os }}
+          path: build/
+
+      - name: Run Google Tests
+        run: |
+          echo "Запускаем Google тесты"
+          make test
+
+  ir_test:
+    name: IR Test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    needs: build
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, macos-latest]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install dependencies (Ubuntu)
+        if: runner.os == 'Linux'
+        run: |
+          sudo sed -i 's|https://ports.ubuntu.com|https://mirror.yandex.ru/ubuntu-ports|g' /etc/apt/sources.list /etc/apt/sources.list.d/*.list 2>/dev/null || true
+          sudo apt-get update -y
+          sudo apt-get install -y --fix-missing g++ make cmake flex bison libgtest-dev libzstd-dev
+          wget -q https://apt.llvm.org/llvm.sh
+          chmod +x llvm.sh
+          sudo ./llvm.sh 20
+
+      - name: Install dependencies (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          brew install cmake flex bison googletest llvm zstd
+          echo "/opt/homebrew/opt/flex/bin" >> $GITHUB_PATH
+          echo "/opt/homebrew/opt/bison/bin" >> $GITHUB_PATH
+          echo "/opt/homebrew/opt/llvm/bin" >> $GITHUB_PATH
+          echo "/usr/local/opt/flex/bin" >> $GITHUB_PATH
+          echo "/usr/local/opt/bison/bin" >> $GITHUB_PATH
+          echo "/usr/local/opt/llvm/bin" >> $GITHUB_PATH
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts-${{ matrix.os }}
+          path: build/
+
+      - name: Run IR Tests
+        run: |
+          echo "Проверяем компиляцию в нативный бинарник без использования clang"
+          make build
+          for f in examples/*.txt; do
+            name=$(basename "$f" .txt)
+            ./build/compiler -o /tmp/${name} < "$f"
+            rm -f /tmp/${name}.o
+            if [ ! -x "/tmp/${name}" ]; then
+              echo "FAIL: $name (executable not produced)"
+              exit 1
+            fi
+            echo "OK: $name"
+          done
+
+  stress:
+    name: Stress Test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    needs: build
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, macos-latest]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install dependencies (Ubuntu)
+        if: runner.os == 'Linux'
+        run: |
+          sudo sed -i 's|https://ports.ubuntu.com|https://mirror.yandex.ru/ubuntu-ports|g' /etc/apt/sources.list /etc/apt/sources.list.d/*.list 2>/dev/null || true
+          sudo apt-get update -y
+          sudo apt-get install -y --fix-missing g++ make cmake flex bison libgtest-dev libzstd-dev
+          wget -q https://apt.llvm.org/llvm.sh
+          chmod +x llvm.sh
+          sudo ./llvm.sh 20
+
+      - name: Install dependencies (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          brew install cmake flex bison googletest llvm zstd
+          echo "/opt/homebrew/opt/flex/bin" >> $GITHUB_PATH
+          echo "/opt/homebrew/opt/bison/bin" >> $GITHUB_PATH
+          echo "/opt/homebrew/opt/llvm/bin" >> $GITHUB_PATH
+          echo "/usr/local/opt/flex/bin" >> $GITHUB_PATH
+          echo "/usr/local/opt/bison/bin" >> $GITHUB_PATH
+          echo "/usr/local/opt/llvm/bin" >> $GITHUB_PATH
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts-${{ matrix.os }}
+          path: build/
+
+      - name: Run Stress Tests
+        run: |
+          echo "Запускаем тесты с address и undefined"
+          make stress

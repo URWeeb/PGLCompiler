@@ -1,4 +1,4 @@
-class Counter {
+struct Counter {
     var count : int;
 
     func increment(step : int) -> int {

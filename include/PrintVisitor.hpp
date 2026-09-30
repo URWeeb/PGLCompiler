@@ -22,7 +22,7 @@ public:
   void Visit(const WhileStatement &node) override;
   void Visit(const PrintStatement &node) override;
   void Visit(const ReturnStatement &node) override;
-  void Visit(const ClassDeclaration &node) override;
+  void Visit(const StructDeclaration &node) override;
   void Visit(const MethodDeclaration &node) override;
   void Visit(const FunctionDeclaration &node) override;
   void Visit(const NewObjectExpression &node) override;

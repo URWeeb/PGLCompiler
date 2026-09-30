@@ -1,6 +1,6 @@
 #include "Interpreter.hpp"
 
-Interpreter::ClassData::ClassData(const ClassDeclaration &node)
+Interpreter::StructData::StructData(const StructDeclaration &node)
     : fields(&node.fields) {
   for (auto &m : node.methods) {
     methods[m->name] = m.get();
@@ -167,7 +167,7 @@ void Interpreter::Visit(const PrintStatement &node) {
         } else if constexpr (std::is_same_v<T, ArrayID>) {
           std::cout << "<array>\n";
         } else {
-          std::cout << "<object:" << runtime_data_.objects[v.value].class_name
+          std::cout << "<object:" << runtime_data_.objects[v.value].struct_name
                     << ">\n";
         }
       },
@@ -180,7 +180,7 @@ void Interpreter::Visit(const ReturnStatement &node) {
 }
 
 void Interpreter::Visit(const Program &node) {
-  for (auto &c : node.classes) {
+  for (auto &c : node.structs) {
     c->Accept(*this);
   }
 
@@ -238,17 +238,17 @@ void Interpreter::Visit(const ArrayIndexExpression &node) {
 }
 
 void Interpreter::Visit(const ClassDeclaration &node) {
-  classes_.insert_or_assign(node.name, ClassData{node});
+  structs_.insert_or_assign(node.name, StructData{node});
 }
 
 void Interpreter::Visit(const MethodDeclaration &) {}
 
 void Interpreter::Visit(const NewObjectExpression &node) {
   ObjectData object;
-  object.class_name = node.class_name;
-  auto iter = classes_.find(node.class_name);
+  object.struct_name = node.struct_name;
+  auto iter = structs_.find(node.struct_name);
 
-  if (iter != classes_.end()) {
+  if (iter != structs_.end()) {
     for (const auto &field : *iter->second.fields) {
       PossibleValue init_val;
 
@@ -335,14 +335,14 @@ Interpreter::PossibleValue Interpreter::CallMethod(
     const std::string &object_name, const std::string &method_name,
     const std::vector<std::unique_ptr<Expression>> &arg_nodes) {
   ObjectID object_id = std::get<ObjectID>(variables_.at(object_name));
-  auto &class_data =
-      classes_.at(runtime_data_.objects[object_id.value].class_name);
-  auto method_iter = class_data.methods.find(method_name);
+  auto &struct_data =
+      structs_.at(runtime_data_.objects[object_id.value].struct_name);
+  auto method_iter = struct_data.methods.find(method_name);
 
-  if (method_iter == class_data.methods.end()) {
+  if (method_iter == struct_data.methods.end()) {
     throw std::runtime_error(
-        "Method '" + method_name + "' not found in class '" +
-        runtime_data_.objects[object_id.value].class_name + "'");
+        "Method '" + method_name + "' not found in struct '" +
+        runtime_data_.objects[object_id.value].struct_data + "'");
   }
 
   const MethodDeclaration *method = method_iter->second;
@@ -371,7 +371,7 @@ Interpreter::PossibleValue Interpreter::CallMethod(
     return_value = exception.value;
   }
 
-  for (const auto &field : *class_data.fields) {
+  for (const auto &field : *struct_data.fields) {
     if (auto iter = variables_.find(field.name); iter != variables_.end()) {
       runtime_data_.objects[object_id.value].fields[field.name] = iter->second;
     }

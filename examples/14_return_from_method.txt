@@ -1,4 +1,4 @@
-class Checker {
+struct Checker {
     func isPositive(n : int) -> bool {
         if (n > 0) {
             return true;

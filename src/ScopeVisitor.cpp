@@ -1,6 +1,6 @@
 #include "ScopeVisitor.hpp"
 
-ClassInfo::ClassInfo(const ClassDeclaration &node) : name(node.name) {
+StructInfo::StructInfo(const StructDeclaration &node) : name(node.name) {
   for (auto &field : node.fields) {
     fields[field.name] = field.type;
   }
@@ -11,13 +11,13 @@ ClassInfo::ClassInfo(const ClassDeclaration &node) : name(node.name) {
 }
 
 const CallableInfo *
-ClassInfo::FindMethod(const std::string &method_name) const {
+StructInfo::FindMethod(const std::string &method_name) const {
   auto iter = methods.find(method_name);
 
   return (iter != methods.end() ? &iter->second : nullptr);
 }
 
-const Type *ClassInfo::FindField(const std::string &field_name) const {
+const Type *StructInfo::FindField(const std::string &field_name) const {
   const auto iter = fields.find(field_name);
 
   return (iter != fields.end() ? &iter->second : nullptr);
@@ -78,9 +78,9 @@ void ScopeVisitor::RequireValidType(const Type &type,
                                     const std::string &context) {
   std::visit(overloaded{[](const IntType &) {}, [](const BoolType &) {},
                         [](const VoidType &) {},
-                        [&](const ClassType &c) {
-                          if (!symbol_table_.HasClass(c.name)) {
-                            throw std::runtime_error("Unknown class '" +
+                        [&](const StructType &c) {
+                          if (!symbol_table_.HasStruct(c.name)) {
+                            throw std::runtime_error("Unknown struct '" +
                                                      c.name + "' in '" +
                                                      context + "'");
                           }
@@ -91,21 +91,21 @@ void ScopeVisitor::RequireValidType(const Type &type,
              type);
 }
 
-void ScopeVisitor::Visit(const ClassDeclaration &node) {
-  if (symbol_table_.HasClass(node.name)) {
-    throw std::runtime_error("Class '" + node.name + "' is declared twice");
+void ScopeVisitor::Visit(const StructDeclaration &node) {
+  if (symbol_table_.HasStruct(node.name)) {
+    throw std::runtime_error("Struct '" + node.name + "' is declared twice");
   }
 
-  symbol_table_.AddClass(ClassInfo{node});
+  symbol_table_.AddStruct(StructInfo{node});
 
-  std::string prev = current_class_;
-  current_class_ = node.name;
+  std::string prev = current_struct_;
+  current_struct_ = node.name;
 
   for (auto &m : node.methods) {
     m->Accept(*this);
   }
 
-  current_class_ = prev;
+  current_struct_ = prev;
 }
 
 void ScopeVisitor::Visit(const MethodDeclaration &node) {
@@ -117,7 +117,7 @@ void ScopeVisitor::Visit(const MethodDeclaration &node) {
   inside_callable_ = true;
   PushScope();
 
-  if (const ClassInfo *ci = symbol_table_.GetClass(current_class_)) {
+  if (const StructInfo *ci = symbol_table_.GetStruct(current_struct_)) {
     for (const auto &[fname, ftype] : ci->fields) {
       current_->DeclareLocal(fname,
                              VariableInfo(FieldDeclaration(fname, ftype)));
@@ -156,7 +156,7 @@ void ScopeVisitor::Visit(const BinaryOperation &node) {
 }
 
 void ScopeVisitor::Visit(const NewObjectExpression &node) {
-  RequireValidType(ClassType{node.class_name}, "new object");
+  RequireValidType(StructType{node.struct_name}, "new object");
 }
 
 void ScopeVisitor::Visit(const NewArrayExpression &node) {
@@ -190,13 +190,13 @@ void ScopeVisitor::Visit(const ArrayAssignStatement &node) {
 void ScopeVisitor::Visit(const MethodCallExpression &node) {
 
   if (const VariableInfo *obj = RequireDeclared(node.object);
-      std::holds_alternative<ClassType>(obj->type)) {
-    const std::string class_name = std::get<ClassType>(obj->type).name;
+      std::holds_alternative<StructType>(obj->type)) {
+    const std::string struct_name = std::get<StructType>(obj->type).name;
 
-    if (const ClassInfo *ci = symbol_table_.GetClass(class_name);
+    if (const StructInfo *ci = symbol_table_.GetStruct(struct_name);
         ci && !ci->FindMethod(node.method_name)) {
       throw std::runtime_error("Method '" + node.method_name +
-                               "' not found in class '" + class_name + "'");
+                               "' not found in struct '" + struct_name + "'");
     }
   }
 
@@ -208,12 +208,12 @@ void ScopeVisitor::Visit(const MethodCallExpression &node) {
 void ScopeVisitor::Visit(const MethodCallStatement &node) {
 
   if (const VariableInfo *obj = RequireDeclared(node.object);
-      std::holds_alternative<ClassType>(obj->type)) {
-    const std::string class_name = std::get<ClassType>(obj->type).name;
-    if (const ClassInfo *ci = symbol_table_.GetClass(class_name);
+      std::holds_alternative<StructTYpe>(obj->type)) {
+    const std::string struct_name = std::get<StructType>(obj->type).name;
+    if (const StructInfo *ci = symbol_table_.GetStruct(struct_name);
         ci && !ci->FindMethod(node.method_name)) {
       throw std::runtime_error("Method '" + node.method_name +
-                               "' not found in class '" + class_name + "'");
+                               "' not found in struct '" + struct_name + "'");
     }
   }
 
@@ -225,13 +225,13 @@ void ScopeVisitor::Visit(const MethodCallStatement &node) {
 void ScopeVisitor::Visit(const FieldAccessExpression &node) {
 
   if (const VariableInfo *obj = RequireDeclared(node.object);
-      std::holds_alternative<ClassType>(obj->type)) {
-    std::string class_name = std::get<ClassType>(obj->type).name;
-    const ClassInfo *ci = symbol_table_.GetClass(class_name);
+      std::holds_alternative<StructType>(obj->type)) {
+    std::string struct_name = std::get<StructType>(obj->type).name;
+    const StructInfo *ci = symbol_table_.GetStruct(struct_name);
 
     if (ci && !ci->FindField(node.field)) {
       throw std::runtime_error("Field '" + node.field +
-                               "' not found in class '" + class_name + "'");
+                               "' not found in struct '" + struct_name + "'");
     }
   }
 }
@@ -347,7 +347,7 @@ void ScopeVisitor::Visit(const FunctionCallStatement &node) {
 }
 
 void ScopeVisitor::Visit(const Program &node) {
-  for (auto &c : node.classes) {
+  for (auto &c : node.structs) {
     c->Accept(*this);
   }
 

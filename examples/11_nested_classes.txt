@@ -1,8 +1,8 @@
-class Node {
+struct Node {
     var value : int;
 }
 
-class Pair {
+struct Pair {
     var first  : int;
     var second : int;
 

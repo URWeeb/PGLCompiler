@@ -27,7 +27,7 @@ public:
   void Visit(const Program &node) override;
   void Visit(const NewArrayExpression &node) override;
   void Visit(const ArrayIndexExpression &node) override;
-  void Visit(const ClassDeclaration &node) override;
+  void Visit(const StructDeclaration &node) override;
   void Visit(const MethodDeclaration &) override;
   void Visit(const NewObjectExpression &node) override;
   void Visit(const MethodCallExpression &node) override;
@@ -52,14 +52,14 @@ private:
   std::unordered_map<std::string, PossibleValue> variables_;
   PossibleValue last_value_;
 
-  struct ClassData {
+  struct StructData {
     const std::vector<FieldDeclaration> *fields;
     std::unordered_map<std::string, const MethodDeclaration *> methods;
 
-    explicit ClassData(const ClassDeclaration &node);
+    explicit StructData(const StructDeclaration &node);
   };
 
-  std::unordered_map<std::string, ClassData> classes_;
+  std::unordered_map<std::string, StructData> structs_;
   std::unordered_map<std::string, const FunctionDeclaration *> functions_;
 
   static int AsInt(const PossibleValue &v);

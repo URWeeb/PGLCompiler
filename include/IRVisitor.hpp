@@ -27,7 +27,7 @@ public:
   void Visit(const IfElseStatement &) override;
   void Visit(const WhileStatement &) override;
   void Visit(const PrintStatement &) override;
-  void Visit(const ClassDeclaration &) override;
+  void Visit(const StructDeclaration &) override;
   void Visit(const MethodDeclaration &) override;
   void Visit(const NewObjectExpression &) override;
   void Visit(const NewArrayExpression &) override;
@@ -65,12 +65,12 @@ private:
   llvm::Function *current_function_ = nullptr;
   std::unordered_map<std::string, LocalVar> local_vars_;
   std::unordered_map<std::string, FieldPtr> fields_;
-  std::unordered_map<std::string, llvm::StructType *> class_types_;
+  std::unordered_map<std::string, llvm::StructType *> struct_types_;
   std::unordered_map<std::string, std::unordered_map<std::string, unsigned>>
       field_indices_;
   std::unordered_map<std::string, std::unordered_map<std::string, Type>>
       field_types_;
-  std::string current_class_;
+  std::string current_struct_;
   llvm::Value *self_ptr_ = nullptr;
   llvm::FunctionCallee printf_function_;
   llvm::FunctionCallee malloc_function_;
@@ -80,7 +80,7 @@ private:
   void DeclareStructTypes(const Program &);
   void DeclareFunctionSignatures(const Program &);
   llvm::Type *LLVMType(const Type &);
-  static std::string MethodFunctionName(const std::string &clss,
+  static std::string MethodFunctionName(const std::string &strct,
                                         const std::string &method);
   llvm::AllocaInst *CreateEntryAlloca(const std::string &name,
                                       llvm::Type *ty) const;

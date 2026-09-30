@@ -16,9 +16,9 @@ struct VoidType {
   bool operator==(const VoidType &) const = default;
 };
 
-struct ClassType {
+struct StructType {
   std::string name;
-  bool operator==(const ClassType &) const = default;
+  bool operator==(const StructType &) const = default;
 };
 
 struct Type;
@@ -52,7 +52,7 @@ struct ArrayType {
   bool operator==(const ArrayType &other) const;
 };
 
-struct Type : std::variant<BoolType, IntType, VoidType, ClassType, ArrayType> {
+struct Type : std::variant<BoolType, IntType, VoidType, StructType, ArrayType> {
   using variant::variant;
   bool operator==(const Type &) const = default;
 };
@@ -75,7 +75,7 @@ inline std::string TypeToString(const Type &type) {
       overloaded{[](const IntType &) { return std::string("int"); },
                  [](const BoolType &) { return std::string("bool"); },
                  [](const VoidType &) { return std::string("void"); },
-                 [](const ClassType &cl) { return cl.name; },
+                 [](const StructType &cl) { return cl.name; },
                  [](const ArrayType &arr) {
                    return TypeToString(*arr.element_type) + "[]";
                  }},

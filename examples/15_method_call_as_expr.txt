@@ -1,4 +1,4 @@
-class Arith {
+struct Arith {
     func double(x : int) -> int {
         return x * 2;
     }

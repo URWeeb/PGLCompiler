@@ -25,7 +25,7 @@ public:
   void Visit(const IfElseStatement &node) override;
   void Visit(const WhileStatement &node) override;
   void Visit(const PrintStatement &node) override;
-  void Visit(const ClassDeclaration &node) override;
+  void Visit(const StructDeclaration &node) override;
   void Visit(const MethodDeclaration &node) override;
   void Visit(const NewObjectExpression &node) override;
   void Visit(const NewArrayExpression &node) override;
@@ -43,7 +43,7 @@ private:
   const SymbolTable &symbol_table_;
   Type current_type_ = VoidType{};
   Type expected_return_type_ = VoidType{};
-  std::string current_class_;
+  std::string current_struct_;
   std::vector<std::unordered_map<std::string, Type>> scopes_;
 
   void PushScope();

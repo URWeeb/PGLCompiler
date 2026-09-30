@@ -32,28 +32,28 @@ llvm::Type *IRVisitor::LLVMType(const Type &type) {
           [&](const IntType &) -> llvm::Type * { return i32Ty(); },
           [&](const BoolType &) -> llvm::Type * { return i1Ty(); },
           [&](const VoidType &) -> llvm::Type * { return voidTy(); },
-          [&](const ClassType &) -> llvm::Type * { return ptrTy(); },
+          [&](const StructType &) -> llvm::Type * { return ptrTy(); },
           [&](const ArrayType &) -> llvm::Type * { return ptrTy(); },
       },
       type);
 }
 
 void IRVisitor::DeclareStructTypes(const Program &node) {
-  for (const auto &clss : node.classes) {
-    class_types_[clss->name] = llvm::StructType::create(context_, clss->name);
+  for (const auto &strct : node.structs) {
+    struct_types_[strct->name] = llvm::StructType::create(context_, strct->name);
   }
 
-  for (const auto &clss : node.classes) {
+  for (const auto &strct : node.structs) {
     std::vector<llvm::Type *> body;
     unsigned index = 0;
 
-    for (const auto &field : clss->fields) {
+    for (const auto &field : strct->fields) {
       body.push_back(LLVMType(field.type));
-      field_indices_[clss->name][field.name] = index++;
-      field_types_[clss->name][field.name] = field.type;
+      field_indices_[strct->name][field.name] = index++;
+      field_types_[strct->name][field.name] = field.type;
     }
 
-    class_types_[clss->name]->setBody(body);
+    sturct_types_[strct->name]->setBody(body);
   }
 }
 
@@ -72,8 +72,8 @@ void IRVisitor::DeclareFunctionSignatures(const Program &node) {
                            function->name, *module_);
   }
 
-  for (const auto &clss : node.classes) {
-    for (const auto &method : clss->methods) {
+  for (const auto &strct : node.structs) {
+    for (const auto &method : strct->methods) {
       std::vector<llvm::Type *> parameters = {ptrTy()};
 
       for (const auto &parameter : method->parameters) {
@@ -84,7 +84,7 @@ void IRVisitor::DeclareFunctionSignatures(const Program &node) {
           LLVMType(method->return_type), parameters, false);
 
       llvm::Function::Create(function_type, llvm::Function::ExternalLinkage,
-                             MethodFunctionName(clss->name, method->name),
+                             MethodFunctionName(strct->name, method->name),
                              *module_);
     }
   }
@@ -113,7 +113,7 @@ void IRVisitor::AddDefaultReturn(const Type &return_type) {
                  [&](const BoolType &) {
                    builder_.CreateRet(llvm::ConstantInt::get(i1Ty(), 0));
                  },
-                 [&](const ClassType &) {
+                 [&](const StructType &) {
                    builder_.CreateRet(llvm::ConstantPointerNull::get(
                        llvm::PointerType::getUnqual(context_)));
                  },
@@ -125,9 +125,9 @@ void IRVisitor::AddDefaultReturn(const Type &return_type) {
              return_type);
 }
 
-std::string IRVisitor::MethodFunctionName(const std::string &clss,
+std::string IRVisitor::MethodFunctionName(const std::string &strct,
                                           const std::string &method) {
-  return clss + "__" + method;
+  return strct + "__" + method;
 }
 
 llvm::AllocaInst *IRVisitor::CreateEntryAlloca(const std::string &name,
@@ -173,8 +173,8 @@ void IRVisitor::Visit(const Program &node) {
   DeclareStructTypes(node);
   DeclareFunctionSignatures(node);
 
-  for (auto &clss : node.classes) {
-    clss->Accept(*this);
+  for (auto &strct : node.structs) {
+    strct->Accept(*this);
   }
 
   for (auto &function : node.functions) {
@@ -291,7 +291,7 @@ void IRVisitor::Visit(const BinaryOperation &node) {
 }
 
 void IRVisitor::Visit(const NewObjectExpression &node) {
-  auto *struct_type = class_types_.at(node.class_name);
+  auto *struct_type = struct_types_.at(node.struct_name);
   auto *size = SizeOf(struct_type);
   auto *raw = EmitMalloc(size);
 
@@ -329,11 +329,11 @@ void IRVisitor::Visit(const ArrayIndexExpression &node) {
 
 void IRVisitor::Visit(const FieldAccessExpression &node) {
   auto [object_addr, object_type] = LookupAddress(node.object);
-  const auto &class_name = std::get<ClassType>(object_type).name;
+  const auto &struct_name = std::get<StructType>(object_type).name;
   auto *object_ptr = builder_.CreateLoad(ptrTy(), object_addr, "obj");
-  auto *struct_type = class_types_.at(class_name);
-  unsigned idx = field_indices_.at(class_name).at(node.field);
-  const Type &field_type = field_types_.at(class_name).at(node.field);
+  auto *struct_type = struct_types_.at(struct_name);
+  unsigned idx = field_indices_.at(struct_name).at(node.field);
+  const Type &field_type = field_types_.at(struct_name).at(node.field);
   auto *gep = builder_.CreateGEP(struct_type, object_ptr,
                                  {llvm::ConstantInt::get(i32Ty(), 0),
                                   llvm::ConstantInt::get(i32Ty(), idx)},
@@ -343,10 +343,10 @@ void IRVisitor::Visit(const FieldAccessExpression &node) {
 
 void IRVisitor::Visit(const MethodCallExpression &node) {
   auto [obj_addr, obj_type] = LookupAddress(node.object);
-  const auto &class_name = std::get<ClassType>(obj_type).name;
+  const auto &structs_name = std::get<StructType>(obj_type).name;
   auto *obj_ptr = builder_.CreateLoad(ptrTy(), obj_addr, "obj");
   llvm::Function *meth =
-      module_->getFunction(MethodFunctionName(class_name, node.method_name));
+      module_->getFunction(MethodFunctionName(struct_name, node.method_name));
   std::vector<llvm::Value *> args = {obj_ptr};
 
   for (const auto &a : node.args) {
@@ -381,10 +381,10 @@ void IRVisitor::Visit(const FunctionCallExpression &node) {
 
 void IRVisitor::Visit(const MethodCallStatement &node) {
   auto [obj_addr, obj_type] = LookupAddress(node.object);
-  const auto &class_name = std::get<ClassType>(obj_type).name;
+  const auto &struct_name = std::get<StructType>(obj_type).name;
   auto *obj_ptr = builder_.CreateLoad(ptrTy(), obj_addr, "obj");
   llvm::Function *meth =
-      module_->getFunction(MethodFunctionName(class_name, node.method_name));
+      module_->getFunction(MethodFunctionName(struct_name, node.method_name));
   std::vector<llvm::Value *> args = {obj_ptr};
 
   for (const auto &a : node.args) {
@@ -513,15 +513,15 @@ void IRVisitor::Visit(const ReturnStatement &node) {
   builder_.CreateRet(last_value_);
 }
 
-void IRVisitor::Visit(const ClassDeclaration &node) {
-  std::string previous = current_class_;
-  current_class_ = node.name;
+void IRVisitor::Visit(const StructDeclaration &node) {
+  std::string previous = current_struct_;
+  current_struct_ = node.name;
 
   for (const auto &method : node.methods) {
     method->Accept(*this);
   }
 
-  current_class_ = previous;
+  current_struct_ = previous;
 }
 
 void IRVisitor::Visit(const FunctionDeclaration &node) {
@@ -556,7 +556,7 @@ void IRVisitor::Visit(const FunctionDeclaration &node) {
 
 void IRVisitor::Visit(const MethodDeclaration &node) {
   llvm::Function *function =
-      module_->getFunction(MethodFunctionName(current_class_, node.name));
+      module_->getFunction(MethodFunctionName(current_struct_, node.name));
 
   if (!function) {
     return;
@@ -570,15 +570,15 @@ void IRVisitor::Visit(const MethodDeclaration &node) {
   auto argument_iter = function->arg_begin();
   argument_iter->setName("self");
   self_ptr_ = argument_iter++;
-  auto *struct_type = class_types_.at(current_class_);
+  auto *struct_type = struct_types_.at(current_struct_);
 
-  for (const auto &[field_name, field_index] : field_indices_[current_class_]) {
+  for (const auto &[field_name, field_index] : field_indices_[current_struct_]) {
     auto *gep =
         builder_.CreateGEP(struct_type, self_ptr_,
                            {llvm::ConstantInt::get(i32Ty(), 0),
                             llvm::ConstantInt::get(i32Ty(), field_index)},
                            field_name + ".ptr");
-    fields_[field_name] = {gep, field_types_.at(current_class_).at(field_name)};
+    fields_[field_name] = {gep, field_types_.at(current_struct_).at(field_name)};
   }
 
   for (const auto &parameter : node.parameters) {

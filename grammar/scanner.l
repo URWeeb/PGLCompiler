@@ -14,7 +14,7 @@
 "->" { return token::ARROW; }
 "print" { return token::PRINT; }
 "var" { return token::VAR; }
-"class" { return token::CLASS; }
+"struct" { return token::STRUCT; }
 "new" { return token::NEW; }
 
 "bool" { return token::TYPE_BOOL; }

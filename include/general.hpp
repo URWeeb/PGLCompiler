@@ -24,7 +24,7 @@ struct ArrayData {
 };
 
 struct ObjectData {
-  std::string class_name;
+  std::string struct_name;
   std::unordered_map<std::string, PossibleValue> fields;
 };
 

@@ -18,7 +18,7 @@ struct IfStatement;
 struct IfElseStatement;
 struct WhileStatement;
 struct PrintStatement;
-struct ClassDeclaration;
+struct StructDeclaration;
 struct MethodDeclaration;
 struct NewObjectExpression;
 struct NewArrayExpression;
@@ -57,7 +57,7 @@ struct Visitor {
 
     virtual void Visit(const PrintStatement &) = 0;
 
-    virtual void Visit(const ClassDeclaration &) = 0;
+    virtual void Visit(const StructDeclaration &) = 0;
 
     virtual void Visit(const MethodDeclaration &) = 0;
 
@@ -172,9 +172,9 @@ struct BinaryOperation : Expression {
 };
 
 struct NewObjectExpression : Expression {
-    std::string class_name;
+    std::string struct_name;
 
-    NewObjectExpression(std::string cl_name) : class_name(std::move(cl_name)) {
+    NewObjectExpression(std::string cl_name) : struct_name(std::move(cl_name)) {
     }
 
     void Accept(Visitor &v) override { v.Visit(*this); }
@@ -333,12 +333,12 @@ struct MethodDeclaration : Node {
     void Accept(Visitor &v) override { v.Visit(*this); }
 };
 
-struct ClassDeclaration : Node {
+struct StructDeclaration : Node {
     std::string name;
     std::vector<FieldDeclaration> fields;
     std::vector<std::unique_ptr<MethodDeclaration> > methods;
 
-    ClassDeclaration(std::string nm, std::vector<FieldDeclaration> &&flds,
+    StructDeclaration(std::string nm, std::vector<FieldDeclaration> &&flds,
                      std::vector<std::unique_ptr<MethodDeclaration> > &&meths)
         : name(std::move(nm)),
           fields(std::move(flds)),
@@ -405,21 +405,21 @@ struct FunctionCallStatement : Statement {
 };
 
 struct Program {
-    std::vector<std::unique_ptr<ClassDeclaration> > classes;
+    std::vector<std::unique_ptr<StructDeclaration> > structs;
     std::vector<std::unique_ptr<FunctionDeclaration> > functions;
     Statements instructions;
 
-    Program(std::vector<std::unique_ptr<ClassDeclaration> > &&cls,
+    Program(std::vector<std::unique_ptr<StructDeclaration> > &&strcs,
             std::vector<std::unique_ptr<FunctionDeclaration> > &&funcs,
             Statements &&insts)
-        : classes(std::move(cls)),
+        : structs(std::move(strcs)),
           functions(std::move(funcs)),
           instructions(std::move(insts)) {
     }
 
-    Program(std::vector<std::unique_ptr<ClassDeclaration> > &&cls,
+    Program(std::vector<std::unique_ptr<StructDeclaration> > &&strcs,
             Statements &&insts)
-        : classes(std::move(cls)), instructions(std::move(insts)) {
+        : structs(std::move(strcs)), instructions(std::move(insts)) {
     }
 
     void Accept(Visitor &v) { v.Visit(*this); }

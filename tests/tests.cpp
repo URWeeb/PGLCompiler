@@ -317,32 +317,32 @@ TEST(PrintStatementTest, IsStatement) {
 }
 
 TEST(ProgramTest, EmptyProgram) {
-  std::vector<std::unique_ptr<ClassDeclaration>> classes{};
+  std::vector<std::unique_ptr<StructDeclaration>> structs{};
   Statements stmts{};
-  Program prog(std::move(classes), std::move(stmts));
-  EXPECT_TRUE(prog.classes.empty());
+  Program prog(std::move(structs), std::move(stmts));
+  EXPECT_TRUE(prog.structs.empty());
   EXPECT_TRUE(prog.instructions.empty());
 }
 
 TEST(ProgramTest, ProgramWithStatements) {
-  std::vector<std::unique_ptr<ClassDeclaration>> classes{};
+  std::vector<std::unique_ptr<StructDeclaration>> structs{};
   Statements stmts{};
   stmts.push_back(
       std::make_unique<VariableDeclaration>("x", IntType{}, new IntLiteral(0)));
   stmts.push_back(std::make_unique<PrintStatement>(new IdentityLiteral("x")));
-  Program prog(std::move(classes), std::move(stmts));
+  Program prog(std::move(structs), std::move(stmts));
   EXPECT_EQ(prog.instructions.size(), 2u);
 }
 
-TEST(ProgramTest, ProgramWithClass) {
-  std::vector<std::unique_ptr<ClassDeclaration>> classes{};
+TEST(ProgramTest, ProgramWithStructs) {
+  std::vector<std::unique_ptr<StructDeclaration>> structs{};
   std::vector<FieldDeclaration> fields{{"x", IntType{}}};
   std::vector<std::unique_ptr<MethodDeclaration>> methods{};
-  classes.push_back(std::make_unique<ClassDeclaration>("Foo", std::move(fields),
+  structs.push_back(std::make_unique<StructDeclaration>("Foo", std::move(fields),
                                                        std::move(methods)));
   Statements stmts{};
-  Program prog(std::move(classes), std::move(stmts));
-  EXPECT_EQ(prog.classes.size(), 1u);
+  Program prog(std::move(structs), std::move(stmts));
+  EXPECT_EQ(prog.structs.size(), 1u);
 }
 
 TEST(NestedExprTest, BinaryOfUnary) {
@@ -598,26 +598,26 @@ TEST(ParserTest, WhileStatementEmptyBody) {
   EXPECT_EQ(r.exit_code, 0);
 }
 
-TEST(ParserTest, ClassDeclarationEmpty) {
-  RunResult r = run_compiler("class Foo { } func main() -> int { }");
+TEST(ParserTest, StructDeclarationEmpty) {
+  RunResult r = run_compiler("struct Foo { } func main() -> int { }");
   EXPECT_EQ(r.exit_code, 0);
 }
 
-TEST(ParserTest, ClassDeclarationWithField) {
+TEST(ParserTest, StructDeclarationWithField) {
   RunResult r =
-      run_compiler("class Foo { var x: int; } func main() -> int { }");
+      run_compiler("struct Foo { var x: int; } func main() -> int { }");
   EXPECT_EQ(r.exit_code, 0);
 }
 
-TEST(ParserTest, ClassDeclarationWithMethod) {
+TEST(ParserTest, StructDeclarationWithMethod) {
   RunResult r = run_compiler(
-      "class Foo { func bar() -> int { } } func main() -> int { }");
+      "struct Foo { func bar() -> int { } } func main() -> int { }");
   EXPECT_EQ(r.exit_code, 0);
 }
 
 TEST(ParserTest, MethodCallStatement) {
   RunResult r = run_compiler(R"(
-    class Foo { func bar() -> int { } }
+    struct Foo { func bar() -> int { } }
     func main() -> int {
       var f: Foo = new Foo();
       f.bar();
@@ -750,10 +750,10 @@ TEST(PrintVisitorTest, IfElseStatement) {
 TEST(PrintVisitorTest, Program) {
   {
     PrintVisitor v("/tmp/pv_test.txt");
-    std::vector<std::unique_ptr<ClassDeclaration>> classes{};
+    std::vector<std::unique_ptr<StructDeclaration>> structs{};
     Statements stmts{};
     stmts.push_back(std::make_unique<PrintStatement>(new IntLiteral(1)));
-    Program prog(std::move(classes), std::move(stmts));
+    Program prog(std::move(structs), std::move(stmts));
     prog.Accept(v);
   }
   std::string out = read_file("/tmp/pv_test.txt");
@@ -785,16 +785,16 @@ TEST(PrintVisitorTest, WhileStatement) {
   EXPECT_NE(out.find("Body:"), std::string::npos);
 }
 
-TEST(PrintVisitorTest, ClassDeclaration) {
+TEST(PrintVisitorTest, StructDeclaration) {
   {
     PrintVisitor v("/tmp/pv_test.txt");
     std::vector<FieldDeclaration> fields{{"x", IntType{}}, {"y", BoolType{}}};
     std::vector<std::unique_ptr<MethodDeclaration>> methods{};
-    ClassDeclaration node("MyClass", std::move(fields), std::move(methods));
+    StructDeclaration node("MyStruct", std::move(fields), std::move(methods));
     node.Accept(v);
   }
   std::string out = read_file("/tmp/pv_test.txt");
-  EXPECT_NE(out.find("Class: MyClass"), std::string::npos);
+  EXPECT_NE(out.find("Struct: MyStruct"), std::string::npos);
   EXPECT_NE(out.find("Field x : int"), std::string::npos);
   EXPECT_NE(out.find("Field y : bool"), std::string::npos);
 }
@@ -987,7 +987,7 @@ TEST(InterpreterTest, PrintOutputsToStdout) {
 
 TEST(InterpreterTest, ComplexProgram) {
   Interpreter interp;
-  std::vector<std::unique_ptr<ClassDeclaration>> classes{};
+  std::vector<std::unique_ptr<StructDeclaration>> structs{};
   Statements stmts{};
   stmts.push_back(std::make_unique<VariableDeclaration>(
       "x", IntType{},
@@ -995,7 +995,7 @@ TEST(InterpreterTest, ComplexProgram) {
   stmts.push_back(std::make_unique<VariableDeclaration>(
       "y", IntType{},
       new BinaryOperation(new IdentityLiteral("x"), new IntLiteral(2), "*")));
-  Program prog(std::move(classes), std::move(stmts));
+  Program prog(std::move(structs), std::move(stmts));
   prog.Accept(interp);
   EXPECT_EQ(interp.GetVar("x"), Interpreter::PossibleValue(5));
   EXPECT_EQ(interp.GetVar("y"), Interpreter::PossibleValue(10));
@@ -1060,21 +1060,21 @@ TEST(ScopeVisitorTest, ShadowingAllowed) {
   EXPECT_NO_THROW(node.Accept(sv));
 }
 
-TEST(ScopeVisitorTest, ClassDeclaredTwice) {
+TEST(ScopeVisitorTest, StructDeclaredTwice) {
   ScopeVisitor sv;
   std::vector<FieldDeclaration> f1{};
   std::vector<std::unique_ptr<MethodDeclaration>> m1{};
-  ClassDeclaration first("Foo", std::move(f1), std::move(m1));
+  StructDeclaration first("Foo", std::move(f1), std::move(m1));
   first.Accept(sv);
   std::vector<FieldDeclaration> f2{};
   std::vector<std::unique_ptr<MethodDeclaration>> m2{};
-  ClassDeclaration second("Foo", std::move(f2), std::move(m2));
+  StructDeclaration second("Foo", std::move(f2), std::move(m2));
   EXPECT_THROW(second.Accept(sv), std::runtime_error);
 }
 
-TEST(ScopeVisitorTest, UnknownClassInNew) {
+TEST(ScopeVisitorTest, UnknownStructInNew) {
   ScopeVisitor sv;
-  NewObjectExpression node("UnknownClass");
+  NewObjectExpression node("UnknownStruct");
   EXPECT_THROW(node.Accept(sv), std::runtime_error);
 }
 
@@ -1082,9 +1082,9 @@ TEST(ScopeVisitorTest, MethodNotFound) {
   ScopeVisitor sv;
   std::vector<FieldDeclaration> fields{};
   std::vector<std::unique_ptr<MethodDeclaration>> methods{};
-  ClassDeclaration cls("Bar", std::move(fields), std::move(methods));
+  StructDeclaration cls("Bar", std::move(fields), std::move(methods));
   cls.Accept(sv);
-  VariableDeclaration decl("b", ClassType{"Bar"},
+  VariableDeclaration decl("b", StructType{"Bar"},
                            new NewObjectExpression("Bar"));
   decl.Accept(sv);
   std::vector<std::unique_ptr<Expression>> args{};
@@ -1096,9 +1096,9 @@ TEST(ScopeVisitorTest, FieldNotFound) {
   ScopeVisitor sv;
   std::vector<FieldDeclaration> fields{};
   std::vector<std::unique_ptr<MethodDeclaration>> methods{};
-  ClassDeclaration cls("Baz", std::move(fields), std::move(methods));
+  StructDeclaration cls("Baz", std::move(fields), std::move(methods));
   cls.Accept(sv);
-  VariableDeclaration decl("b", ClassType{"Baz"},
+  VariableDeclaration decl("b", StructType{"Baz"},
                            new NewObjectExpression("Baz"));
   decl.Accept(sv);
   FieldAccessExpression access("b", "noField");
@@ -1155,7 +1155,7 @@ TEST(CallableInfoTest, NoParamsFunction) {
   EXPECT_TRUE(ci.params.empty());
 }
 
-TEST(ClassInfoTest, ConstructFromClassDeclaration) {
+TEST(StructInfoTest, ConstructFromStructDeclaration) {
   std::vector<FieldDeclaration> fields{{"x", IntType{}}, {"flag", BoolType{}}};
   std::vector<std::unique_ptr<MethodDeclaration>> methods{};
   Statements body{};
@@ -1163,10 +1163,10 @@ TEST(ClassInfoTest, ConstructFromClassDeclaration) {
       "foo", std::vector<Parameter>{{"n", IntType{}}}, IntType{},
       std::move(body)));
 
-  ClassDeclaration cls("MyClass", std::move(fields), std::move(methods));
-  ClassInfo ci(cls);
+  StructDeclaration cls("MyStruct", std::move(fields), std::move(methods));
+  StructInfo ci(cls);
 
-  EXPECT_EQ(ci.name, "MyClass");
+  EXPECT_EQ(ci.name, "MyStruct");
   ASSERT_EQ(ci.fields.size(), 2u);
   EXPECT_EQ(ci.fields.at("x"), Type{IntType{}});
   EXPECT_EQ(ci.fields.at("flag"), Type{BoolType{}});
@@ -1177,47 +1177,47 @@ TEST(ClassInfoTest, ConstructFromClassDeclaration) {
   EXPECT_EQ(ci.methods.at("foo").params[0].name, "n");
 }
 
-TEST(ClassInfoTest, EmptyClass) {
-  ClassDeclaration cls("Empty", {}, {});
-  ClassInfo ci(cls);
+TEST(StructInfoTest, EmptyStruct) {
+  StructDeclaration cls("Empty", {}, {});
+  StructInfo ci(cls);
 
   EXPECT_EQ(ci.name, "Empty");
   EXPECT_TRUE(ci.fields.empty());
   EXPECT_TRUE(ci.methods.empty());
 }
 
-TEST(ClassInfoTest, FindMethodExists) {
+TEST(StructInfoTest, FindMethodExists) {
   std::vector<std::unique_ptr<MethodDeclaration>> methods{};
   Statements body{};
   methods.push_back(std::make_unique<MethodDeclaration>(
       "bar", std::vector<Parameter>{}, IntType{}, std::move(body)));
-  ClassDeclaration cls("Foo", {}, std::move(methods));
-  ClassInfo ci(cls);
+  StructDeclaration cls("Foo", {}, std::move(methods));
+  StructInfo ci(cls);
 
   const CallableInfo *m = ci.FindMethod("bar");
   ASSERT_NE(m, nullptr);
   EXPECT_EQ(m->name, "bar");
 }
 
-TEST(ClassInfoTest, FindMethodNotExists) {
-  ClassDeclaration cls("Foo", {}, {});
-  ClassInfo ci(cls);
+TEST(StructInfoTest, FindMethodNotExists) {
+  StructDeclaration cls("Foo", {}, {});
+  StructInfo ci(cls);
   EXPECT_EQ(ci.FindMethod("nonexistent"), nullptr);
 }
 
-TEST(ClassInfoTest, FindFieldExists) {
+TEST(StructInfoTest, FindFieldExists) {
   std::vector<FieldDeclaration> fields{{"value", IntType{}}};
-  ClassDeclaration cls("Foo", std::move(fields), {});
-  ClassInfo ci(cls);
+  StructDeclaration cls("Foo", std::move(fields), {});
+  StructInfo ci(cls);
 
   const Type *f = ci.FindField("value");
   ASSERT_NE(f, nullptr);
   EXPECT_EQ(*f, Type{IntType{}});
 }
 
-TEST(ClassInfoTest, FindFieldNotExists) {
-  ClassDeclaration cls("Foo", {}, {});
-  ClassInfo ci(cls);
+TEST(StructInfoTest, FindFieldNotExists) {
+  StructDeclaration cls("Foo", {}, {});
+  StructInfo ci(cls);
   EXPECT_EQ(ci.FindField("ghost"), nullptr);
 }
 
@@ -1292,20 +1292,20 @@ TEST(SymbolTableTest, MultipleFunctionsRegistered) {
   EXPECT_EQ(sv.GetSymbolTable().GetFunction("bar")->params.size(), 1u);
 }
 
-TEST(SymbolTableTest, ClassAndFunctionIndependent) {
+TEST(SymbolTableTest, StructAndFunctionIndependent) {
   ScopeVisitor sv;
 
-  ClassDeclaration cls("Foo", {}, {});
+  StructDeclaration cls("Foo", {}, {});
   cls.Accept(sv);
 
   Statements body{};
   FunctionDeclaration func("foo", {}, IntType{}, std::move(body));
   func.Accept(sv);
 
-  EXPECT_TRUE(sv.GetSymbolTable().HasClass("Foo"));
+  EXPECT_TRUE(sv.GetSymbolTable().HasStruct("Foo"));
   EXPECT_TRUE(sv.GetSymbolTable().HasFunction("foo"));
   EXPECT_EQ(sv.GetSymbolTable().GetFunction("Foo"), nullptr);
-  EXPECT_EQ(sv.GetSymbolTable().GetClass("foo"), nullptr);
+  EXPECT_EQ(sv.GetSymbolTable().GetStruct("foo"), nullptr);
 }
 
 TEST(ScopeVisitorTest, FunctionDeclaredTwice) {
@@ -1586,9 +1586,9 @@ TEST(ParserTest, MultipleFunctions) {
   EXPECT_EQ(r.exit_code, 0);
 }
 
-TEST(ParserTest, FunctionWithClassesAndMethods) {
+TEST(ParserTest, FunctionWithStructsAndMethods) {
   RunResult r = run_compiler(R"(
-    class Counter {
+    struct Counter {
       var value: int;
       func increment() -> int { }
     }
@@ -1992,9 +1992,9 @@ TEST(IrTest, FunctionReturnBool) {
   EXPECT_EQ(parse_ints(r.output), (std::vector<int>{1, 0}));
 }
 
-TEST(IrTest, ClassFieldsZeroInit) {
+TEST(IrTest, StructFieldsZeroInit) {
   auto r = run_ir(R"(
-    class Point { var x: int; var y: int; }
+    struct Point { var x: int; var y: int; }
     func main() -> int {
       var p: Point = new Point();
       print(p.x); print(p.y);
@@ -2004,9 +2004,9 @@ TEST(IrTest, ClassFieldsZeroInit) {
   EXPECT_EQ(parse_ints(r.output), (std::vector<int>{0, 0}));
 }
 
-TEST(IrTest, ClassMethodCall) {
+TEST(IrTest, StructMethodCall) {
   auto r = run_ir(R"(
-    class Counter {
+    struct Counter {
       var count: int;
       func increment(step: int) -> int {
         count = count + step;
@@ -2024,9 +2024,9 @@ TEST(IrTest, ClassMethodCall) {
   EXPECT_EQ(parse_ints(r.output), (std::vector<int>{1, 5, 15}));
 }
 
-TEST(IrTest, ClassMethodReturnBool) {
+TEST(IrTest, StructMethodReturnBool) {
   auto r = run_ir(R"(
-    class Checker {
+    struct Checker {
       func isPositive(n: int) -> bool {
         if (n > 0) { return true; }
         return false;
@@ -2041,9 +2041,9 @@ TEST(IrTest, ClassMethodReturnBool) {
   EXPECT_EQ(parse_ints(r.output), (std::vector<int>{1, 0}));
 }
 
-TEST(IrTest, ClassTwoInstancesIndependent) {
+TEST(IrTest, StructTwoInstancesIndependent) {
   auto r = run_ir(R"(
-    class Box {
+    struct Box {
       var val: int;
       func set(v: int) -> int { val = v; return val; }
       func get() -> int { return val; }
@@ -2184,9 +2184,9 @@ TEST(CompilerTest, RecursiveFunctionCompilesAndRuns) {
   EXPECT_EQ(parse_ints(*out), (std::vector<int>{720}));
 }
 
-TEST(CompilerTest, ClassFieldsCompiledCorrectly) {
+TEST(CompilerTest, StructFieldsCompiledCorrectly) {
   auto out = compile_and_run(R"(
-    class Counter {
+    struct Counter {
       var value: int;
       func set(n: int) -> int { value = n; return 0; }
       func get() -> int { return value; }

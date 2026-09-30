@@ -24,14 +24,14 @@ struct CallableInfo {
         return_type(node.return_type) {}
 };
 
-struct ClassInfo {
+struct StructInfo {
   std::string name;
   std::unordered_map<std::string, Type> fields;
   std::unordered_map<std::string, CallableInfo> methods;
 
-  ClassInfo() = default;
+  StructInfo() = default;
 
-  explicit ClassInfo(const ClassDeclaration &node);
+  explicit StructInfo(const StructDeclaration &node);
 
   [[nodiscard]] const CallableInfo *
   FindMethod(const std::string &method_name) const;
@@ -40,17 +40,17 @@ struct ClassInfo {
 
 class SymbolTable {
 public:
-  void AddClass(ClassInfo info) {
-    classes_.insert_or_assign(info.name, std::move(info));
+  void AddStruct(StructInfo info) {
+    structs_.insert_or_assign(info.name, std::move(info));
   }
 
-  [[nodiscard]] const ClassInfo *GetClass(const std::string &name) const {
-    auto it = classes_.find(name);
-    return it != classes_.end() ? &it->second : nullptr;
+  [[nodiscard]] const StructInfo *GetStruct(const std::string &name) const {
+    auto it = structs_.find(name);
+    return it != structs_.end() ? &it->second : nullptr;
   }
 
-  [[nodiscard]] bool HasClass(const std::string &name) const {
-    return classes_.contains(name);
+  [[nodiscard]] bool HasStruct(const std::string &name) const {
+    return structs_.contains(name);
   }
 
   void AddFunction(CallableInfo info) {
@@ -67,7 +67,7 @@ public:
   }
 
 private:
-  std::unordered_map<std::string, ClassInfo> classes_;
+  std::unordered_map<std::string, StructInfo> structs_;
   std::unordered_map<std::string, CallableInfo> functions_;
 };
 
@@ -97,7 +97,7 @@ class ScopeVisitor : public Visitor {
 public:
   ScopeVisitor();
 
-  void Visit(const ClassDeclaration &node) override;
+  void Visit(const StructDeclaration &node) override;
   void Visit(const MethodDeclaration &node) override;
   void Visit(const IntLiteral &) override;
   void Visit(const BoolLiteral &) override;
@@ -130,7 +130,7 @@ private:
   std::unique_ptr<ScopeNode> root_;
   ScopeNode *current_;
   SymbolTable symbol_table_;
-  std::string current_class_;
+  std::string current_struct_;
   bool inside_callable_ = false;
 
   void PushScope();

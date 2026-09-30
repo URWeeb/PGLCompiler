@@ -14,7 +14,7 @@
   extern int yylex(yy::parser::value_type*);
 }
 
-%token FUNC ARROW CLASS NEW
+%token FUNC ARROW STRUCT NEW
 %token VAR IF ELSE PRINT WHILE RETURN
 %token EQUAL UNEQUAL
 %token PLUS MINUS STAR SLASH
@@ -33,8 +33,8 @@
 %type <std::vector<std::unique_ptr<Statement>>> statements else_branch
 %type <Type> type
 
-%type <std::vector<std::unique_ptr<ClassDeclaration>>> class_list
-%type <ClassDeclaration*> class_declaration
+%type <std::vector<std::unique_ptr<StructDeclaration>>> struct_list
+%type <StructDeclaration*> struct_declaration
 %type <std::vector<FieldDeclaration>> field_list
 %type <std::vector<std::unique_ptr<MethodDeclaration>>> method_list
 %type <MethodDeclaration*> method_declaration
@@ -55,7 +55,7 @@
 %%
 
 program:
-  class_list function_list {
+  struct_list function_list {
     Statements main_body;
     std::vector<std::unique_ptr<FunctionDeclaration>> functions;
 
@@ -88,19 +88,19 @@ function_declaration:
   }
 ;
 
-class_list:
+struct_list:
   %empty {
-    $$ = std::vector<std::unique_ptr<ClassDeclaration>>{};
+    $$ = std::vector<std::unique_ptr<StructDeclaration>>{};
   }
-| class_list class_declaration {
-    $1.push_back(std::unique_ptr<ClassDeclaration>($2));
+| struct_list struct_declaration {
+    $1.push_back(std::unique_ptr<StructDeclaration>($2));
     $$ = std::move($1);
   }
 ;
 
-class_declaration:
-  CLASS IDENTITY LBRACE field_list method_list RBRACE {
-    $$ = new ClassDeclaration($2, std::move($4), std::move($5));
+struct_declaration:
+  STRUCT IDENTITY LBRACE field_list method_list RBRACE {
+    $$ = new StructDeclaration($2, std::move($4), std::move($5));
   }
 ;
 
@@ -157,7 +157,7 @@ type:
     $$ = BoolType{};
   }
 | IDENTITY {
-    $$ = ClassType{$1};
+    $$ = StructType{$1};
   }
 | type LBRACKET RBRACKET {
     $$ = ArrayType{std::make_unique<Type>($1)};

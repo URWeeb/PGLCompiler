@@ -149,8 +149,8 @@ void PrintVisitor::Visit(const ReturnStatement &node) {
   --indent_;
 }
 
-void PrintVisitor::Visit(const ClassDeclaration &node) {
-  Write("Class: " + node.name);
+void PrintVisitor::Visit(const StructDeclaration &node) {
+  Write("Struct: " + node.name);
 
   ++indent_;
   for (auto &f : node.fields) {
@@ -205,7 +205,7 @@ void PrintVisitor::Visit(const FunctionDeclaration &node) {
 }
 
 void PrintVisitor::Visit(const NewObjectExpression &node) {
-  Write("NewObject: " + node.class_name);
+  Write("NewObject: " + node.struct_name);
 }
 
 void PrintVisitor::Visit(const NewArrayExpression &node) {
@@ -272,7 +272,7 @@ void PrintVisitor::Visit(const Program &node) {
   Write("Program:");
 
   ++indent_;
-  for (auto &c : node.classes) {
+  for (auto &c : node.structs) {
     c->Accept(*this);
   }
 

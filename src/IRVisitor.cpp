@@ -53,7 +53,7 @@ void IRVisitor::DeclareStructTypes(const Program &node) {
       field_types_[strct->name][field.name] = field.type;
     }
 
-    sturct_types_[strct->name]->setBody(body);
+    struct_types_[strct->name]->setBody(body);
   }
 }
 
@@ -343,7 +343,7 @@ void IRVisitor::Visit(const FieldAccessExpression &node) {
 
 void IRVisitor::Visit(const MethodCallExpression &node) {
   auto [obj_addr, obj_type] = LookupAddress(node.object);
-  const auto &structs_name = std::get<StructType>(obj_type).name;
+  const auto &struct_name = std::get<StructType>(obj_type).name;
   auto *obj_ptr = builder_.CreateLoad(ptrTy(), obj_addr, "obj");
   llvm::Function *meth =
       module_->getFunction(MethodFunctionName(struct_name, node.method_name));

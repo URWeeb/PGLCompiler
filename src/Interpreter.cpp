@@ -237,7 +237,7 @@ void Interpreter::Visit(const ArrayIndexExpression &node) {
   last_value_ = elements[static_cast<size_t>(idx)];
 }
 
-void Interpreter::Visit(const ClassDeclaration &node) {
+void Interpreter::Visit(const StructDeclaration &node) {
   structs_.insert_or_assign(node.name, StructData{node});
 }
 
@@ -342,7 +342,7 @@ Interpreter::PossibleValue Interpreter::CallMethod(
   if (method_iter == struct_data.methods.end()) {
     throw std::runtime_error(
         "Method '" + method_name + "' not found in struct '" +
-        runtime_data_.objects[object_id.value].struct_data + "'");
+        runtime_data_.objects[object_id.value].struct_name + "'");
   }
 
   const MethodDeclaration *method = method_iter->second;

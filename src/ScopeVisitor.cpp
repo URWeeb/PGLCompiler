@@ -208,7 +208,7 @@ void ScopeVisitor::Visit(const MethodCallExpression &node) {
 void ScopeVisitor::Visit(const MethodCallStatement &node) {
 
   if (const VariableInfo *obj = RequireDeclared(node.object);
-      std::holds_alternative<StructTYpe>(obj->type)) {
+      std::holds_alternative<StructType>(obj->type)) {
     const std::string struct_name = std::get<StructType>(obj->type).name;
     if (const StructInfo *ci = symbol_table_.GetStruct(struct_name);
         ci && !ci->FindMethod(node.method_name)) {

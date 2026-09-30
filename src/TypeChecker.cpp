@@ -293,7 +293,7 @@ void TypeChecker::Visit(const MethodCallStatement &node) {
 void TypeChecker::Visit(const FieldAccessExpression &node) {
   Type obj_type = GetVariableType(node.object);
 
-  if (!std::holds_alternative<Structtype>(obj_type)) {
+  if (!std::holds_alternative<StructType>(obj_type)) {
     throw std::runtime_error("Variable '" + node.object + "' is not an object");
   }
 

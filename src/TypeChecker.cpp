@@ -38,23 +38,23 @@ void TypeChecker::CheckMethodCall(
     const std::vector<std::unique_ptr<Expression>> &args) {
   Type object_type = GetVariableType(object_name);
 
-  if (!std::holds_alternative<ClassType>(object_type)) {
+  if (!std::holds_alternative<StructType>(object_type)) {
     throw std::runtime_error("Cannot call method on non-object '" +
                              object_name + "'");
   }
 
-  std::string class_name = std::get<ClassType>(object_type).name;
-  const ClassInfo *class_info = symbol_table_.GetClass(class_name);
+  std::string struct_name = std::get<StructType>(object_type).name;
+  const StructInfo *struct_info = symbol_table_.GetStruct(struct_name);
 
-  if (class_info == nullptr) {
-    throw std::runtime_error("Unknown class '" + class_name + "'");
+  if (struct_info == nullptr) {
+    throw std::runtime_error("Unknown struct '" + struct_name + "'");
   }
 
-  const CallableInfo *method = class_info->FindMethod(method_name);
+  const CallableInfo *method = struct_info->FindMethod(method_name);
 
   if (method == nullptr) {
     throw std::runtime_error("Method '" + method_name +
-                             "' not found in class '" + class_name + "'");
+                             "' not found in struct '" + struct_name + "'");
   }
 
   if (method->params.size() != args.size()) {
@@ -218,22 +218,22 @@ void TypeChecker::Visit(const PrintStatement &node) {
   node.expression->Accept(*this);
 }
 
-void TypeChecker::Visit(const ClassDeclaration &node) {
-  std::string prev_class = current_class_;
-  current_class_ = node.name;
+void TypeChecker::Visit(const StructDeclaration &node) {
+  std::string prev_struct = current_struct_;
+  current_struct_ = node.name;
 
   for (const auto &method : node.methods) {
     method->Accept(*this);
   }
 
-  current_class_ = prev_class;
+  current_struct_ = prev_struct;
 }
 
 void TypeChecker::Visit(const MethodDeclaration &node) {
   PushScope();
 
-  if (const ClassInfo *class_info = symbol_table_.GetClass(current_class_)) {
-    for (const auto &[fname, ftype] : class_info->fields) {
+  if (const StructInfo *struct_info = symbol_table_.GetStruct(current_struct_)) {
+    for (const auto &[fname, ftype] : struct_info->fields) {
       DeclareVariable(fname, ftype);
     }
   }
@@ -254,12 +254,12 @@ void TypeChecker::Visit(const MethodDeclaration &node) {
 }
 
 void TypeChecker::Visit(const NewObjectExpression &node) {
-  if (!symbol_table_.HasClass(node.class_name)) {
-    throw std::runtime_error("Cannot instantiate unknown class: '" +
-                             node.class_name + "'");
+  if (!symbol_table_.HasStruct(node.struct_name)) {
+    throw std::runtime_error("Cannot instantiate unknown struct: '" +
+                             node.struct_name + "'");
   }
 
-  current_type_ = ClassType{node.class_name};
+  current_type_ = StructType{node.struct_name};
 }
 
 void TypeChecker::Visit(const NewArrayExpression &node) {
@@ -293,22 +293,22 @@ void TypeChecker::Visit(const MethodCallStatement &node) {
 void TypeChecker::Visit(const FieldAccessExpression &node) {
   Type obj_type = GetVariableType(node.object);
 
-  if (!std::holds_alternative<ClassType>(obj_type)) {
+  if (!std::holds_alternative<Structtype>(obj_type)) {
     throw std::runtime_error("Variable '" + node.object + "' is not an object");
   }
 
-  std::string class_name = std::get<ClassType>(obj_type).name;
-  const ClassInfo *class_info = symbol_table_.GetClass(class_name);
+  std::string struct_name = std::get<StructType>(obj_type).name;
+  const StructInfo *struct_info = symbol_table_.GetStruct(struct_name);
 
-  if (class_info == nullptr) {
-    throw std::runtime_error("Unknown class '" + class_name + "'");
+  if (struct_info == nullptr) {
+    throw std::runtime_error("Unknown struct '" + struct_name + "'");
   }
 
-  const Type *field_type = class_info->FindField(node.field);
+  const Type *field_type = struct_info->FindField(node.field);
 
   if (field_type == nullptr) {
-    throw std::runtime_error("Field '" + node.field + "' not found in class '" +
-                             class_name + "'");
+    throw std::runtime_error("Field '" + node.field + "' not found in struct '" +
+                             struct_name + "'");
   }
 
   current_type_ = *field_type;
@@ -346,7 +346,7 @@ void TypeChecker::Visit(const ReturnStatement &node) {
 }
 
 void TypeChecker::Visit(const Program &node) {
-  for (const auto &clas : node.classes) {
+  for (const auto &clas : node.structs) {
     clas->Accept(*this);
   }
 
